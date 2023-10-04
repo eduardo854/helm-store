@@ -51,29 +51,37 @@ jobs:
             
             for file in $file_list; do
               echo "file: ${file}"
-              mv $file ./aux_dir
+              if [ -f "$file" ]; then
+                  mv "$file" ./aux_dir
+              else
+                  echo "Error: File '$file' does not exist."
+              fi
             done
             
             url=$(echo "https://raw.githubusercontent.com/eduardo854/helm-store/${{ steps.dest-branch.outputs.DEST_BRANCH }}/helm/")
             
-            if ! helm repo index ./aux_dir --merge ../dest/index.yaml --url $url; then
-              echo "Error: Failed to generate repository index."
-              exit 1
-            fi
-            
-            echo "Copying files..."
-            shopt -s extglob
-
-            mkdir -p ../dest/helm
-
-            if ! cp -pr ./aux_dir/!(index.yaml) ../dest/helm/; then
-                echo "Error: Failed to copy files to the destination directory."
+            if [ -n "$(find ./aux_dir -type f -name '*.tgz')" ]; then
+              if ! helm repo index ./aux_dir --merge ../dest/index.yaml --url $url; then
+                echo "Error: Failed to generate repository index."
                 exit 1
-            fi
+              fi
+              
+              echo "Copying files..."
+              shopt -s extglob
 
-            if ! cp -pr ./aux_dir/index.yaml ../dest/; then
-                echo "Error: Failed to copy the index file to the destination directory."
-                exit 1
+              mkdir -p ../dest/helm
+
+              if ! cp -pr ./aux_dir/!(index.yaml) ../dest/helm/; then
+                  echo "Error: Failed to copy files to the destination directory."
+                  exit 1
+              fi
+
+              if ! cp -pr ./aux_dir/index.yaml ../dest/; then
+                  echo "Error: Failed to copy the index file to the destination directory."
+                  exit 1
+              fi
+            else
+              echo "Warning: No .tgz files found in ./aux_dir. Skipping index generation."
             fi
       
       - name: Commit alterations to dest branch and push files
