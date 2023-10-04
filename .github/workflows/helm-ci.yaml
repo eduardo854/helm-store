@@ -21,11 +21,17 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
+      - name: Identify destiny branch name
+        id: dest-branch
+        run: |
+            DEST_BRANCH=$(git log -n 1 --pretty=format:"%s" ${{ github.sha }})
+            echo "DEST_BRANCH=${DEST_BRANCH}" >> $GITHUB_OUTPUT
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
           path: 'dest'
-          ref: 'teste1'
+          ref: '${{ steps.dest-branch.outputs.DEST_BRANCH }}'
           fetch-depth: 0
 
       - name: Install Helm
@@ -37,63 +43,67 @@ jobs:
         run: |
             set -e
 
-            mkdir -p ../dest/helm
+            file_list=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} -- ./temp)
+            
+            mkdir -p aux_dir
+            
+            for file in $file_list; do
+              echo "file: ${file}"
+              mv $file ./aux_dir
+            done
+            
+            url = $(echo "https://raw.githubusercontent.com/eduardo854/helm-store/${{ steps.dest-branch.outputs.DEST_BRANCH }}/helm/")
+            
+            if ! helm repo index ./aux_dir --merge ../dest/index.yaml --url $url; then
+              echo "Error: Failed to generate repository index."
+              exit 1
+            fi
             
             echo "Copying files..."
             shopt -s extglob
 
-            file_list=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} -- ./temp)
+            mkdir -p ../dest/helm
 
-            for file in $file_list; do
-            echo "file: ${file}"
-                if ! helm repo index $file --merge ../dest/index.yaml --url https://raw.githubusercontent.com/eduardo854/helm-store/teste1/helm/; then
-                    echo "Error: Failed to generate repository index."
-                    exit 1
-                fi
-            done
-
-            if ! cp -pr ./temp/!(index.yaml) ../dest/helm/; then
+            if ! cp -pr ./aux_dir/!(index.yaml) ../dest/helm/; then
                 echo "Error: Failed to copy files to the destination directory."
                 exit 1
             fi
 
-            if ! cp -pr ./temp/!(index.yaml) ./helm/; then
-                echo "Error: Failed to copy files to the helm directory."
-                exit 1
-            fi
-
-            if ! cp -pr ./temp/index.yaml ../dest/; then
+            if ! cp -pr ./aux_dir/index.yaml ../dest/; then
                 echo "Error: Failed to copy the index file to the destination directory."
                 exit 1
             fi
+      
+      - name: Commit alterations to dest branch and push files
+        shell: bash
+        working-directory: dest
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-            git config user.name "$GITHUB_ACTOR"
-            git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          if ! git add .; then
+              echo "Error: Failed to stage the changes for commit."
+              exit 1
+          fi
 
-            if ! git add .; then
-                echo "Error: Failed to stage the changes for commit."
-                exit 1
-            fi
+          if ! git commit -m "Updated from ref: ${{ github.sha }}"; then
+              echo "Error: Failed to commit the changes."
+              exit 1
+          fi
+          
+          if ! git push; then
+            echo "Error: Failed to push the changes to the remote repository."
 
-            if ! git commit -m "Updated from ref: $GITHUB_SHA"; then
-                echo "Error: Failed to commit the changes."
-                exit 1
-            fi
-            
-            if ! git config pull.rebase true; then
-                echo "Error: Failed to set git config pull.rebase to true."
-                exit 1
-            fi
-            
-            if ! git pull; then
-                echo "Error: Failed to pull the changes from the remote repository."
+            if ! git pull --rebase; then
+                echo "Error: Failed to merge the changes."
                 exit 1
             fi
 
             if ! git push; then
-                echo "Error: Failed to push the changes to the remote repository."
+                echo "Error: Failed to push the merged changes to the remote repository."
                 exit 1
             fi
+          fi
 
       - name: Push New Files
         shell: bash
