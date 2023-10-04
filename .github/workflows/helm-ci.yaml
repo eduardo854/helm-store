@@ -45,6 +45,8 @@ jobs:
         run: |
             set -e
 
+            shopt -s extglob
+
             file_list=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} -- ./temp)
             
             mkdir -p aux_dir
@@ -66,10 +68,10 @@ jobs:
                 exit 1
               fi
               
-              echo "Copying files..."
-              shopt -s extglob
-
+              
               mkdir -p ../dest/helm
+              
+              echo "Copying files..."              
 
               if ! cp -pr ./aux_dir/!(index.yaml) ../dest/helm/; then
                   echo "Error: Failed to copy files to the destination directory."
