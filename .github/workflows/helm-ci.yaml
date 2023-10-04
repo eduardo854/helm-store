@@ -1,0 +1,106 @@
+name: Release Helm Charts
+
+concurrency: release-helm
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'temp/**'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: 'src'
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: 'dest'
+          ref: 'teste1'
+          fetch-depth: 0
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Update New Files and push to dest branch
+        shell: bash
+        working-directory: src
+        run: |
+            set -e
+
+            mkdir -p ../dest/helm
+            
+            echo "Copying files..."
+            shopt -s extglob
+
+            file_list=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} -- ./temp)
+
+            for file in $file_list; do
+                if ! helm repo index $file --merge ../dest/index.yaml --url https://raw.githubusercontent.com/eduardo854/helm-store/teste1/helm/; then
+                    echo "Error: Failed to generate repository index."
+                    exit 1
+                fi
+            done
+
+            if ! cp -pr ./temp/!(index.yaml) ../dest/helm/; then
+                echo "Error: Failed to copy files to the destination directory."
+                exit 1
+            fi
+
+            if ! cp -pr ./temp/!(index.yaml) ./helm/; then
+                echo "Error: Failed to copy files to the helm directory."
+                exit 1
+            fi
+
+            if ! cp -pr ./temp/index.yaml ../dest/; then
+                echo "Error: Failed to copy the index file to the destination directory."
+                exit 1
+            fi
+
+            git config user.name "$GITHUB_ACTOR"
+            git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+            if ! git add .; then
+                echo "Error: Failed to stage the changes for commit."
+                exit 1
+            fi
+
+            if ! git commit -m "Updated from ref: $GITHUB_SHA"; then
+                echo "Error: Failed to commit the changes."
+                exit 1
+            fi
+            
+            if ! git config pull.rebase true; then
+                echo "Error: Failed to set git config pull.rebase to true."
+                exit 1
+            fi
+            
+            if ! git pull; then
+                echo "Error: Failed to pull the changes from the remote repository."
+                exit 1
+            fi
+
+            if ! git push; then
+                echo "Error: Failed to push the changes to the remote repository."
+                exit 1
+            fi
+
+      - name: Push New Files
+        shell: bash
+        working-directory: dest
+        run: |
+            git config user.name "$GITHUB_ACTOR"
+            git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+            git add $(git ls-files -o --exclude-standard)
+            git add index.yaml
+            git commit -m "Updated from ref: $GITHUB_SHA"
+            git push
