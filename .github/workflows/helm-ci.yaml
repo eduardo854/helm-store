@@ -54,7 +54,7 @@ jobs:
               mv $file ./aux_dir
             done
             
-            url = $(echo "https://raw.githubusercontent.com/eduardo854/helm-store/${{ steps.dest-branch.outputs.DEST_BRANCH }}/helm/")
+            url=$(echo "https://raw.githubusercontent.com/eduardo854/helm-store/${{ steps.dest-branch.outputs.DEST_BRANCH }}/helm/")
             
             if ! helm repo index ./aux_dir --merge ../dest/index.yaml --url $url; then
               echo "Error: Failed to generate repository index."
