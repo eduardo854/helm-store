@@ -45,6 +45,7 @@ jobs:
             file_list=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} -- ./temp)
 
             for file in $file_list; do
+            echo "file: ${file}"
                 if ! helm repo index $file --merge ../dest/index.yaml --url https://raw.githubusercontent.com/eduardo854/helm-store/teste1/helm/; then
                     echo "Error: Failed to generate repository index."
                     exit 1
