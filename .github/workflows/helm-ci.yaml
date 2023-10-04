@@ -84,36 +84,25 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
           if ! git add .; then
-              echo "Error: Failed to stage the changes for commit."
-              exit 1
+            echo "Error: Failed to stage the changes for commit."
+            exit 1
           fi
 
           if ! git commit -m "Updated from ref: ${{ github.sha }}"; then
-              echo "Error: Failed to commit the changes."
-              exit 1
+            echo "Error: Failed to commit the changes."
+            exit 1
           fi
           
           if ! git push; then
             echo "Error: Failed to push the changes to the remote repository."
 
             if ! git pull --rebase; then
-                echo "Error: Failed to merge the changes."
-                exit 1
+              echo "Error: Failed to merge the changes."
+              exit 1
             fi
 
             if ! git push; then
-                echo "Error: Failed to push the merged changes to the remote repository."
-                exit 1
+              echo "Error: Failed to push the merged changes to the remote repository."
+              exit 1
             fi
           fi
-
-      - name: Push New Files
-        shell: bash
-        working-directory: dest
-        run: |
-            git config user.name "$GITHUB_ACTOR"
-            git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-            git add $(git ls-files -o --exclude-standard)
-            git add index.yaml
-            git commit -m "Updated from ref: $GITHUB_SHA"
-            git push
