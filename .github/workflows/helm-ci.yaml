@@ -23,6 +23,8 @@ jobs:
 
       - name: Identify destiny branch name
         id: dest-branch
+        shell: bash
+        working-directory: src
         run: |
             DEST_BRANCH=$(git log -n 1 --pretty=format:"%s" ${{ github.sha }})
             echo "DEST_BRANCH=${DEST_BRANCH}" >> $GITHUB_OUTPUT
