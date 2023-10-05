@@ -34,8 +34,6 @@ jobs:
               DEST_BRANCH=stage
             elif [[ $COMMIT_BRANCH == dev* || $COMMIT_BRANCH == feat* || $COMMIT_BRANCH == fix* ]]; then
               DEST_BRANCH=develop
-            elif [[ $COMMIT_BRANCH == sand* ]]; then
-              DEST_BRANCH=sandbox
             else
               DEST_BRANCH=develop
             fi
