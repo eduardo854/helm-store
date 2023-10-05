@@ -29,9 +29,9 @@ jobs:
             COMMIT_BRANCH=$(git log -n 1 --pretty=format:"%s" ${{ github.sha }})
 
             if [[ $COMMIT_BRANCH == main || $COMMIT_BRANCH == master ]]; then
-              DEST_BRANCH=main
+              DEST_BRANCH=production
             elif [[ $COMMIT_BRANCH == hot* || $COMMIT_BRANCH == release* ]]; then
-              DEST_BRANCH=release
+              DEST_BRANCH=stage
             elif [[ $COMMIT_BRANCH == dev* || $COMMIT_BRANCH == feat* || $COMMIT_BRANCH == fix* ]]; then
               DEST_BRANCH=develop
             elif [[ $COMMIT_BRANCH == sand* ]]; then
