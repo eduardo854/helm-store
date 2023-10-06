@@ -8,7 +8,7 @@ on:
     branches:
       - develop #alterar para stage
     paths:
-      - 'temp/**'
+      - 'app/**'
 
 jobs:
   update-helm-chart:
@@ -58,7 +58,7 @@ jobs:
 
             shopt -s extglob
 
-            file_list=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} -- ./temp)
+            file_list=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} -- ./app)
             
             mkdir -p aux_dir
             
