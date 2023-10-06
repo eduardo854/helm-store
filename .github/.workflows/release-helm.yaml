@@ -1,0 +1,128 @@
+name: Release Helm Charts
+
+concurrency: release-helm
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - pre-deployment
+    paths:
+      - 'app/**'
+
+jobs:
+  update-helm-chart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: 'src'
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Identify destiny branch name
+        id: dest-branch
+        shell: bash
+        working-directory: src
+        run: |
+            COMMIT_BRANCH=$(git log -n 1 --pretty=format:"%s" ${{ github.sha }})
+
+            if [[ $COMMIT_BRANCH == main || $COMMIT_BRANCH == master ]]; then
+              DEST_BRANCH=production
+            elif [[ $COMMIT_BRANCH == hot* || $COMMIT_BRANCH == release* ]]; then
+              DEST_BRANCH=stage
+            elif [[ $COMMIT_BRANCH == dev* || $COMMIT_BRANCH == feat* || $COMMIT_BRANCH == fix* ]]; then
+              DEST_BRANCH=develop
+            else
+              DEST_BRANCH=develop
+            fi
+
+            echo "DEST_BRANCH=${DEST_BRANCH}" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: 'dest'
+          ref: '${{ steps.dest-branch.outputs.DEST_BRANCH }}'
+          fetch-depth: 0
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Update New Files and push to dest branch
+        shell: bash
+        working-directory: src
+        run: |
+            set -e
+
+            shopt -s extglob
+
+            file_list=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} -- ./app)
+            
+            mkdir -p aux_dir
+            
+            for file in $file_list; do
+              echo "file: ${file}"
+              if [ -f "$file" ]; then
+                  mv "$file" ./aux_dir
+              else
+                  echo "Error: File '$file' does not exist."
+              fi
+            done
+            
+            url=$(echo "https://raw.githubusercontent.com/eduardo854/helm-store/${{ steps.dest-branch.outputs.DEST_BRANCH }}/helm/")
+            
+            if [ -n "$(find ./aux_dir -type f -name '*.tgz')" ]; then
+              if ! helm repo index ./aux_dir --merge ../dest/index.yaml --url $url; then
+                echo "Error: Failed to generate repository index."
+                exit 1
+              fi
+              
+              
+              mkdir -p ../dest/helm
+              
+              echo "Copying files..."              
+
+              if ! cp -pr ./aux_dir/!(index.yaml) ../dest/helm/; then
+                  echo "Error: Failed to copy files to the destination directory."
+                  exit 1
+              fi
+
+              if ! cp -pr ./aux_dir/index.yaml ../dest/; then
+                  echo "Error: Failed to copy the index file to the destination directory."
+                  exit 1
+              fi
+            else
+              echo "Warning: No .tgz files found in ./aux_dir. Skipping index generation."
+            fi
+
+      - name: Commit alterations to dest branch and push files
+        shell: bash
+        working-directory: dest
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+          if [[ $(git status --porcelain) ]]; then
+            
+            if ! git add .; then
+              echo "Error: Failed to stage the changes for commit."
+              exit 1
+            fi
+            
+            if ! git commit -m "Updated from ref: ${{ github.sha }}"; then
+              echo "Error: Failed to commit the changes."
+              exit 1
+            fi
+            
+            if ! git push; then
+              echo "Error: Failed to push the changes to the remote repository."
+              if ! git pull --rebase && git push; then
+                echo "Error: Failed to merge and push the changes."
+                exit 1
+              fi
+            fi
+          else
+            echo "No changes to commit."
+          fi
