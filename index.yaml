@@ -3,6 +3,19 @@ entries:
   sample-app-ci-cd:
   - apiVersion: v2
     appVersion: 1.0.0
+    created: "2023-10-06T03:04:09.843854312Z"
+    description: A Helm chart for deploying the sample-app-ci-cd on Kubernetes.
+    digest: 2c809194d7d269e0a69544d7c15683b2b2c12e2dff7a9d6d098f5bb3efaaad5b
+    home: https://github.com/eduardo854/sample-app-ci-cd
+    name: sample-app-ci-cd
+    sources:
+    - https://github.com/eduardo854/sample-app-ci-cd
+    type: application
+    urls:
+    - https://raw.githubusercontent.com/eduardo854/helm-store/develop/helm/sample-app-ci-cd-0.1.33.tgz
+    version: 0.1.33
+  - apiVersion: v2
+    appVersion: 1.0.0
     created: "2023-10-06T02:59:12.467110611Z"
     description: A Helm chart for deploying the sample-app-ci-cd on Kubernetes.
     digest: 450d1d3a21d76eec395a8cd3d8ff7ffadf29aa769392ee36e334bd1d7135e1f6
@@ -14,4 +27,4 @@ entries:
     urls:
     - https://raw.githubusercontent.com/eduardo854/helm-store/develop/helm/sample-app-ci-cd-0.1.32.tgz
     version: 0.1.32
-generated: "2023-10-06T02:59:12.466378007Z"
+generated: "2023-10-06T03:04:09.843106997Z"
