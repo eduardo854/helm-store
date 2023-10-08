@@ -9,7 +9,7 @@ flowchart TD;
     A2[repo B] -->|Commit| B;
     A3[repo C] -->|Commit| B;
     A4[repo D] -->|Commit| B;
-    B[helm-store/pre-deployment] -->|Analyze commit messages and submit the Helm chart to the destination branch| C{Action};
+    B[helm-store/pre-deployment] -->|Analyze commit messages <br> and submit the Helm chart <br> to the destination branch| C{Action}
     C --> D[helm-store/develop];
     C --> E[helm-store/stage];
     C --> F[helm-store/production];
