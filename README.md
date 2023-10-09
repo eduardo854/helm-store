@@ -15,6 +15,8 @@ flowchart TD;
     C --> F[helm-store/production];
 ```
 
+Here's the link to my article on [MEDIUM](https://medium.com/@eduardo854/building-your-gitops-pipeline-with-github-actions-dockerhub-and-helm-repository-553c4873116e).
+
 Repository containing my posts on [MEDIUM](https://medium.com/@eduardo854).
 
 To be notified every time a new post is published, **SUBSCRIBE [HERE](https://medium.com/@eduardo854/subscribe)**.
